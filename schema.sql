@@ -42,11 +42,20 @@ create table follow_ups (
   created_at timestamp with time zone default now()
 );
 
+-- A patient has one follow-up status per month. This prevents duplicate rows
+-- when staff members update the same patient.
+alter table follow_ups
+  add constraint follow_ups_patient_month_key unique (patient_id, month);
+
 -- 5. Enable Row Level Security on everything
 alter table doctors enable row level security;
 alter table staff enable row level security;
 alter table patients enable row level security;
 alter table follow_ups enable row level security;
+
+-- RLS policies filter rows, but authenticated users also need table privileges.
+grant select on doctors, staff, patients, follow_ups to authenticated;
+grant insert, update, delete on patients, follow_ups to authenticated;
 
 -- 6. Doctors: can VIEW only their own record and their own patients/follow-ups.
 --    No insert/update/delete rights at all.
