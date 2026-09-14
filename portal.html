@@ -3,44 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login | PuraLink Medical Service</title>
+<title>Login & Dashboard | PuraLink Medical Service</title>
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
-    .dash-wrap { max-width: 1040px; margin: 0 auto; padding: 48px 32px; }
-    .auth-box { max-width: 400px; margin: 80px auto; background: var(--white); border: 1px solid var(--line); border-radius: 6px; padding: 36px; }
-    .auth-box h2 { font-size: 22px; margin-bottom: 6px; }
-    .auth-box .sub { font-size: 13.5px; color: var(--ink-soft); margin-bottom: 22px; }
-    .auth-error { font-size: 13.5px; margin-top: 10px; display: none; }
-    .forgot-link { display: block; text-align: right; font-size: 13px; color: var(--sage); text-decoration: none; margin-top: -10px; margin-bottom: 18px; cursor: pointer; }
-    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-    .dash-header h1 { font-size: 26px; }
-    .dash-header .sub { font-size: 14px; color: var(--ink-soft); margin-top: 6px; }
-    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 36px; }
-    .stat-card { background: var(--white); border: 1px solid var(--line); border-radius: 6px; padding: 22px 24px; }
-    .stat-card .num { font-family: var(--serif); font-size: 30px; color: var(--teal-deep); font-weight: 600; }
-    .stat-card .label { font-size: 13px; color: var(--ink-soft); margin-top: 4px; }
-    .chart-box { background: var(--white); border: 1px solid var(--line); border-radius: 6px; padding: 24px; margin-bottom: 36px; }
-    .chart-box h3 { font-size: 16px; margin-bottom: 18px; }
-    .panel { background: var(--white); border: 1px solid var(--line); border-radius: 6px; padding: 24px; margin-bottom: 26px; }
-    .panel h3 { font-size: 15.5px; margin-bottom: 16px; }
-    .row-flex { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .row-flex select, .row-flex input { padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-family: var(--sans); font-size: 14px; }
-    .patient-table { width: 100%; border-collapse: collapse; background: var(--white); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-    .patient-table th { text-align: left; font-size: 12.5px; color: var(--ink-soft); padding: 12px 14px; border-bottom: 1px solid var(--line); background: var(--paper-tint); }
-    .patient-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+    :root {
+        --teal-deep: #1D5B4F;
+        --teal: #247263;
+        --sage: #7A9A8B;
+        --sage-tint: #EAF3EF;
+        --paper-tint: #F4F8F6;
+        --clay: #B8622E;
+        --clay-tint: #FDF3E9;
+        --white: #FFFFFF;
+        --ink: #15231E;
+        --ink-soft: #586A63;
+        --line: #E2EBE6;
+        --radius: 14px;
+        --shadow: 0 10px 30px -5px rgba(29, 91, 79, 0.05), 0 1px 3px rgba(0,0,0,0.02);
+        --glass-bg: rgba(255, 255, 255, 0.85);
+    }
+    body { background-color: var(--paper-tint); color: var(--ink); font-family: var(--sans, 'Inter', sans-serif); margin: 0; }
+    .dash-wrap { max-width: 1280px; margin: 0 auto; padding: 36px 24px; }
+    
+    /* Layout with Sticky Sidebar */
+    .app-layout { display: flex; gap: 28px; position: relative; align-items: flex-start; }
+    .sidebar-nav { width: 260px; flex-shrink: 0; position: sticky; top: 24px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); max-height: calc(100vh - 48px); overflow-y: auto; display: none; }
+    .sidebar-nav.active { display: block; }
+    .sidebar-search { width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; background: var(--paper-tint); margin-bottom: 16px; box-sizing: border-box; }
+    .sidebar-nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-nav a { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 10px 12px; border-radius: 8px; transition: all 0.2s ease; }
+    .sidebar-nav a:hover, .sidebar-nav a.active { background: var(--sage-tint); color: var(--teal-deep); font-weight: 600; }
+    .main-content-area { flex: 1; min-width: 0; }
+
+    /* Modern Auth Box */
+    .auth-box { max-width: 420px; margin: 80px auto; background: var(--white); border: 1px solid var(--line); border-radius: 16px; padding: 40px; box-shadow: var(--shadow); }
+    .auth-box h2 { font-size: 24px; font-weight: 700; color: var(--teal-deep); margin-bottom: 8px; }
+    .auth-box .sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 24px; }
+    .form-field { margin-bottom: 18px; }
+    .form-field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+    .form-field input { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; transition: border-color 0.2s, box-shadow 0.2s; background: var(--paper-tint); box-sizing: border-box; }
+    .form-field input:focus { outline: none; border-color: var(--teal-deep); box-shadow: 0 0 0 3px rgba(29, 91, 79, 0.1); background: var(--white); }
+    .auth-error { font-size: 13.5px; margin-top: 10px; color: var(--clay); display: none; padding: 10px; background: var(--clay-tint); border-radius: 6px; }
+    .forgot-link { display: block; text-align: right; font-size: 13px; color: var(--teal); text-decoration: none; margin-top: -6px; margin-bottom: 20px; cursor: pointer; font-weight: 500; }
+    .forgot-link:hover { text-decoration: underline; }
+
+    /* Modern Dashboard Header */
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+    .dash-header h1 { font-size: 28px; font-weight: 700; color: var(--teal-deep); letter-spacing: -0.02em; margin: 0; }
+    .dash-header .sub { font-size: 15px; color: var(--ink-soft); margin-top: 6px; }
+
+    /* Bento Grid Layout */
+    .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; margin-bottom: 36px; }
+    .bento-span-4 { grid-column: span 4; }
+    .bento-span-6 { grid-column: span 6; }
+    .bento-span-8 { grid-column: span 8; }
+    .bento-span-12 { grid-column: span 12; }
+
+    /* Stat Cards & Grid */
+    .stat-row, .admin-grid { display: grid; gap: 20px; margin-bottom: 36px; }
+    .stat-row { grid-template-columns: repeat(5, 1fr); }
+    .admin-grid { grid-template-columns: repeat(4, 1fr); }
+    .stat-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); transition: transform 0.2s ease, box-shadow 0.2s ease; position: relative; overflow: hidden; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 14px 35px -5px rgba(29, 91, 79, 0.08); }
+    .stat-card.alert-threshold { border-color: var(--clay); background: linear-gradient(0deg, var(--clay-tint) 0%, var(--white) 100%); }
+    .stat-card .num { font-family: var(--serif, Georgia, serif); font-size: 32px; color: var(--teal-deep); font-weight: 700; }
+    .stat-card .label { font-size: 13px; color: var(--ink-soft); margin-top: 6px; font-weight: 500; }
+    .status-pip { position: absolute; top: 16px; right: 16px; width: 10px; height: 10px; border-radius: 50%; background: var(--sage); }
+    .stat-card.alert-threshold .status-pip { background: var(--clay); animation: pulse 2s infinite; }
+
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(184, 98, 46, 0.4); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(184, 98, 46, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(184, 98, 46, 0); }
+    }
+
+    /* Modern Chart, Section & Panel Cards */
+    .chart-box, .panel, .section-card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; margin-bottom: 36px; box-shadow: var(--shadow); transition: box-shadow 0.2s ease; }
+    .chart-box:hover, .panel:hover, .section-card:hover { box-shadow: 0 14px 35px -5px rgba(29, 91, 79, 0.08); }
+    .chart-box h3, .panel h3, .section-title h3, .section-title h2 { font-size: 18px; font-weight: 700; color: var(--teal-deep); margin: 0 0 16px 0; }
+    .chart-canvas-wrap { position: relative; height: 320px; margin-top: 16px; }
+    .chart-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
+
+    /* View Mode Toggles (Chart vs Table) */
+    .view-mode-toggle { display: inline-flex; background: var(--paper-tint); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 3px; }
+    .view-mode-btn { background: transparent; border: none; font-size: 12px; font-weight: 600; color: var(--ink-soft); padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .view-mode-btn.active { background: var(--white); color: var(--teal-deep); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+    /* Modern Section Header & Controls */
+    .dashboard-section { scroll-margin-top: 32px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+    .section-title h3 { margin: 0; }
+    .section-tools { display: inline-flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .section-toggle { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; color: var(--teal-deep); background: var(--sage-tint); border: 1px solid var(--line); border-radius: 8px; font-size: 0; cursor: pointer; transition: all 0.2s ease; }
+    .section-toggle:hover { background: var(--teal-deep); color: var(--white); border-color: var(--teal-deep); }
+    .section-toggle::before { content: '+'; font-size: 18px; font-weight: 600; line-height: 1; }
+    .section-toggle:not(.is-collapsed)::before { content: '\2212'; }
+    .section-content.is-collapsed { display: none; }
+
+    /* Modern Tables & Accordion Rows */
+    .patient-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--white); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.01); }
+    .patient-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); padding: 16px 20px; border-bottom: 2px solid var(--line); background: var(--paper-tint); font-weight: 700; position: sticky; top: 0; z-index: 2; }
+    .patient-table td { padding: 16px 20px; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--ink); vertical-align: middle; }
     .patient-table tr:last-child td { border-bottom: none; }
-    .status-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px; }
-    .status-pill.completed { background: var(--sage-tint); color: var(--teal-deep); }
-    .status-pill.pending { background: var(--clay-tint); color: var(--clay); }
-    .follow-up-check { width: 18px; height: 18px; accent-color: var(--teal); cursor: pointer; vertical-align: middle; }
+    .patient-table tbody tr { transition: background-color 0.15s ease; }
+    .patient-table tbody tr.clickable:hover td { background-color: var(--paper-tint); cursor: pointer; }
+    .accordion-detail-row { background: var(--paper-tint) !important; display: none; }
+    .accordion-detail-row.open { display: table-row; }
+    .accordion-content { padding: 20px; border-top: 1px dashed var(--line); border-bottom: 1px solid var(--line); }
+
+    /* Modern Status Pills & Role Badges */
+    .status-pill { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 20px; display: inline-block; letter-spacing: 0.02em; }
+    .status-pill.completed { background: var(--sage-tint); color: var(--teal-deep); border: 1px solid rgba(29, 91, 79, 0.15); }
+    .status-pill.in_progress { background: #E0F2FE; color: #0369A1; border: 1px solid rgba(3, 105, 161, 0.15); }
+    .status-pill.pending { background: var(--clay-tint); color: var(--clay); border: 1px solid rgba(184, 98, 46, 0.15); }
+    
+    .role-badge { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-left: 12px; vertical-align: middle; background: var(--sage-tint); color: var(--teal-deep); letter-spacing: 0.03em; text-transform: uppercase; }
+
+    /* Inputs & Filters */
+    .search-input { width: 100%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; font-family: var(--sans); font-size: 14px; margin-bottom: 16px; background: var(--paper-tint); transition: all 0.2s ease; box-sizing: border-box; }
+    .search-input:focus { outline: none; border-color: var(--teal-deep); box-shadow: 0 0 0 3px rgba(29, 91, 79, 0.1); background: var(--white); }
+    .admin-directory-filters, .doctor-directory-filters, .critical-filters { display: grid; gap: 12px; margin-bottom: 16px; }
+    .admin-directory-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); } 
+    .doctor-directory-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .doctor-directory-filters.three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .doctor-directory-filters.four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .critical-filters { grid-template-columns: 2fr 1fr; }
+    .admin-directory-filter, .doctor-directory-filter, .approval-select, .critical-select, .critical-note-input { width: 100%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper-tint); color: var(--ink); font-family: var(--sans); font-size: 14px; transition: all 0.2s ease; font-weight: 500; box-sizing: border-box; }
+    .admin-directory-filter:focus, .doctor-directory-filter:focus, .approval-select:focus, .critical-select:focus, .critical-note-input:focus { outline: none; border-color: var(--teal-deep); box-shadow: 0 0 0 3px rgba(29, 91, 79, 0.1); background: var(--white); }
+
+    .row-flex { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .follow-up-check { width: 18px; height: 18px; accent-color: var(--teal-deep); cursor: pointer; vertical-align: middle; }
     .follow-up-check:disabled { cursor: wait; opacity: 0.65; }
-    .check-label { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; }
-    .search-input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; font-family: var(--sans); font-size: 14px; margin-bottom: 14px; }
+    .check-label { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+    
     #logout-btn { cursor: pointer; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--ink-soft); font-size: 14.5px; }
-    .role-badge { display:inline-block; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 3px; margin-left: 10px; vertical-align: middle; background: var(--sage-tint); color: var(--teal-deep); }
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--ink-soft); font-size: 15px; font-style: italic; }
+
+    @media (max-width: 1024px) {
+        .app-layout { flex-direction: column; }
+        .sidebar-nav { width: 100%; position: static; max-height: none; margin-bottom: 24px; }
+        .bento-grid { display: flex; flex-direction: column; }
+    }
+    @media (max-width: 900px) {
+        .stat-row { grid-template-columns: repeat(2, 1fr); }
+        .admin-grid { grid-template-columns: repeat(2, 1fr); }
+        .bento-span-6 { grid-column: span 12; }
+    }
+    @media (max-width: 760px) { 
+        .admin-directory-filters, .doctor-directory-filters.three-col, .doctor-directory-filters.four-col { grid-template-columns: repeat(2, minmax(0, 1fr)); } 
+    }
+    @media (max-width: 560px) { 
+        .doctor-directory-filters, .critical-filters, .stat-row, .admin-grid, .doctor-directory-filters.three-col, .doctor-directory-filters.four-col { grid-template-columns: 1fr; } 
+    }
 </style>
 </head>
 <body>
@@ -67,99 +183,456 @@
             </ul>
         </nav>
         <div class="header-actions">
-            <a href="portal.html" class="btn btn-ghost" id="login-nav-link">Login</a>
+            <a href="portal.html" class="btn btn-ghost" id="login-nav-link" style="display:none;">Login</a>
             <a href="#" class="btn btn-ghost" id="logout-btn" style="display:none;">Log out</a>
         </div>
     </div>
 </header>
 
-<script>document.getElementById('login-nav-link').style.display = 'none';</script>
-
-<!-- LOGIN VIEW — one form for everyone. No self-registration. Accounts are created by the admin in Supabase. -->
 <div id="auth-view" class="dash-wrap">
     <div class="auth-box">
         <h2>Log in</h2>
         <p class="sub">Use the login details provided to you by PuraLink.</p>
-        <div class="form-field">
-            <label>Email</label>
-            <input type="text" id="auth-email" placeholder="username or you@example.com" autocomplete="username">
-        </div>
-        <div class="form-field">
-            <label>Password</label>
-            <input type="password" id="auth-password" placeholder="Your password" autocomplete="current-password">
-        </div>
-        <a class="forgot-link" id="forgot-link">Forgot your password?</a>
-        <button class="btn btn-primary" id="auth-submit" style="width:100%; justify-content:center;">Log in</button>
-        <p class="auth-error" id="auth-error"></p>
+        <form id="auth-form" onsubmit="return false;">
+            <div class="form-field">
+                <label for="auth-email">Email</label>
+                <input type="text" id="auth-email" placeholder="username or you@example.com" autocomplete="username">
+            </div>
+            <div class="form-field">
+                <label for="auth-password">Password</label>
+                <input type="password" id="auth-password" placeholder="Your password" autocomplete="current-password">
+            </div>
+            <a class="forgot-link" id="forgot-link">Forgot your password?</a>
+            <button type="submit" class="btn btn-primary" id="auth-submit" style="width:100%; justify-content:center;">Log in</button>
+            <p class="auth-error" id="auth-error"></p>
+        </form>
         <p style="text-align:center; margin-top:16px; font-size:13.5px; color:var(--ink-soft);">Don't have login details yet? <a href="contact.html" style="color:var(--teal-deep); font-weight:600;">Contact us</a>.</p>
     </div>
 </div>
 
-<!-- DOCTOR VIEW (read-only) -->
 <div id="doctor-view" class="dash-wrap" style="display:none;">
     <div class="dash-header">
         <div>
             <h1 id="doctor-welcome">Your patients<span class="role-badge">Doctor</span></h1>
-            <p class="sub">Followed up this month, at a glance. Updated by the PuraLink care team.</p>
+            <p class="sub">Follow-up activity this month, at a glance. Updated by the PuraLink care team.</p>
         </div>
     </div>
-    <div class="stat-row">
-        <div class="stat-card"><div class="num" id="stat-total">0</div><div class="label">Total patients</div></div>
-        <div class="stat-card"><div class="num" id="stat-completed">0</div><div class="label">Followed up this month</div></div>
-        <div class="stat-card"><div class="num" id="stat-pending">0</div><div class="label">Not yet followed up</div></div>
-        <div class="stat-card"><div class="num" id="stat-added">0</div><div class="label">Added this month</div></div>
-        <div class="stat-card"><div class="num" id="stat-completion-rate">0%</div><div class="label">Completion rate this month</div></div>
+
+    <div class="app-layout">
+        <!-- Sticky Sidebar Navigation (3 Sections) -->
+        <nav class="sidebar-nav" id="sidebar-nav" aria-label="Dashboard sections">
+            <input type="search" class="sidebar-search" id="sidebar-section-search" placeholder="Filter sections...">
+            <ul>
+                <li><a href="#doctor-analysis" class="nav-link">Analysis</a></li>
+                <li><a href="#followups" class="nav-link">Patient follow-ups</a></li>
+                <li><a href="#critical-patients" class="nav-link">Critical patients</a></li>
+            </ul>
+        </nav>
+
+        <div class="main-content-area">
+            <section id="doctor-analysis" class="dashboard-section section-card">
+                <div class="section-title">
+                    <h3>Analysis of total completed follow-ups</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="stat-row">
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="stat-total">0</div><div class="label">Total patients</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="stat-completed">0</div><div class="label">Completed follow-ups this month</div></div>
+                        <div class="stat-card" id="card-pending-stat"><div class="status-pip"></div><div class="num" id="stat-pending">0</div><div class="label">Pending & In Progress</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="stat-added">0</div><div class="label">Added this month</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="stat-completion-rate">0%</div><div class="label">Completion rate this month</div></div>
+                    </div>
+
+                    <div class="bento-grid">
+                        <div class="chart-box dashboard-section bento-span-6" id="current-followup" data-section="current-followup">
+                            <div class="section-title">
+                                <h3>Follow-up completion this month</h3>
+                            </div>
+                            <div class="section-content">
+                                <div class="chart-canvas-wrap"><canvas id="current-followup-chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="chart-box dashboard-section bento-span-6" id="condition-mix" data-section="condition-mix">
+                            <div class="section-title">
+                                <h3>Patient mix by condition</h3>
+                            </div>
+                            <div class="section-content"><div class="chart-canvas-wrap"><canvas id="condition-chart"></canvas></div></div>
+                        </div>
+
+                        <div class="chart-box dashboard-section bento-span-12" id="followup-history" data-section="followup-history">
+                            <div class="section-title">
+                                <h3>Follow-up completion, last 6 months</h3>
+                                <div class="section-tools">
+                                    <div class="view-mode-toggle">
+                                        <button class="view-mode-btn active" data-target="followup-chart-view">Chart</button>
+                                        <button class="view-mode-btn" data-target="followup-table-view">Table</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="section-content">
+                                <div id="followup-chart-view" class="chart-canvas-wrap"><canvas id="followup-chart"></canvas></div>
+                                <div id="followup-table-view" style="display:none; max-height:300px; overflow-y:auto;">
+                                    <table class="patient-table" id="followup-tabular-data"><thead><tr><th>Month</th><th>Completed</th><th>Pending</th></tr></thead><tbody></tbody></table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-box dashboard-section bento-span-12" id="approval-history" data-section="approval-history">
+                            <div class="section-title">
+                                <h3>Report approval, last 6 months</h3>
+                            </div>
+                            <div class="section-content"><div class="chart-canvas-wrap"><canvas id="approval-chart"></canvas></div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="followups" data-section="followups">
+                <div class="section-title">
+                    <h3>This month's patients status</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="row-flex" style="margin-bottom:14px;">
+                        <input class="search-input" type="search" id="doctor-patient-search" placeholder="Search by patient name" style="flex:1; margin-bottom:0;">
+                    </div>
+                    <div class="doctor-directory-filters">
+                        <select class="doctor-directory-filter" id="doctor-condition-filter" aria-label="Filter by condition"><option value="all">All conditions</option></select>
+                        <select class="doctor-directory-filter" id="doctor-status-filter" aria-label="Filter by follow-up status">
+                            <option value="all">All status</option>
+                            <option value="completed">Completed</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <table class="patient-table">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Status</th></tr></thead>
+                        <tbody id="doctor-patient-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section class="section-card dashboard-section" id="critical-patients" data-section="critical-patients">
+                <div class="section-title">
+                    <h3>Critical patients this month</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="stat-row" style="grid-template-columns: minmax(0, 220px); margin-bottom: 20px;">
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="doctor-critical-count">0</div><div class="label">Critical patients</div></div>
+                    </div>
+                    <div class="critical-filters">
+                        <input class="search-input" id="critical-patient-search" type="search" placeholder="Search by patient name" style="margin-bottom:0;">
+                        <select class="doctor-directory-filter" id="critical-condition-filter" aria-label="Filter critical patients by condition"><option value="all">All conditions</option></select>
+                    </div>
+                    <table class="patient-table">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Critical note</th></tr></thead>
+                        <tbody id="critical-patient-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
     </div>
-    <div class="chart-box">
-        <h3>Follow-up completion, last 6 months</h3>
-        <canvas id="trend-chart" height="90"></canvas>
-    </div>
-    <p style="font-size:16px; font-weight:600; margin-bottom:14px;">This month's follow-ups</p>
-    <table class="patient-table">
-        <thead><tr><th>Patient</th><th>Condition</th><th>Status</th></tr></thead>
-        <tbody id="doctor-patient-rows"></tbody>
-    </table>
 </div>
 
-<!-- STAFF VIEW (can select a doctor, view patients, mark complete) -->
 <div id="staff-view" class="dash-wrap" style="display:none;">
     <div class="dash-header">
-        <h1 id="staff-welcome">Staff dashboard<span class="role-badge">Staff</span></h1>
-    </div>
-    <div class="panel">
-        <h3>Select a doctor</h3>
-        <div class="row-flex">
-            <select id="doctor-select" style="flex:1; min-width:220px;"></select>
+        <div>
+            <h1 id="staff-welcome">Staff dashboard<span class="role-badge">Staff</span></h1>
+            <p class="sub">Manage and complete your assigned follow-ups.</p>
         </div>
     </div>
-    <div class="panel">
-        <h3>Add a patient for this doctor</h3>
-        <div class="row-flex">
-            <input type="text" id="new-patient-label" placeholder="Patient label (e.g. Case 0501)" style="flex:1; min-width:160px;">
-            <input type="text" id="new-patient-condition" placeholder="Chronic condition" style="flex:1; min-width:160px;">
-            <button class="btn btn-primary btn-small" id="add-patient-btn">Add patient</button>
+    
+    <div class="app-layout">
+        <!-- Sticky Sidebar Navigation for Staff -->
+        <nav class="sidebar-nav" id="staff-sidebar-nav" aria-label="Dashboard sections">
+            <input type="search" class="sidebar-search" id="staff-sidebar-search" placeholder="Filter sections...">
+            <ul>
+                <li><a href="#staff-analysis" class="nav-link">Analysis</a></li>
+                <li><a href="#staff-pending" class="nav-link">Pending follow-ups</a></li>
+                <li><a href="#staff-inprogress-section" class="nav-link">In progress follow-ups</a></li>
+                <li><a href="#staff-completed-section" class="nav-link">Completed follow-ups</a></li>
+            </ul>
+        </nav>
+
+        <div class="main-content-area">
+            <section class="section-card dashboard-section" id="staff-analysis" data-section="staff-analysis">
+                <div class="section-title">
+                    <h3>Analysis of your follow-ups this month</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="stat-row">
+                        <div class="stat-card">
+                            <div class="status-pip"></div>
+                            <div class="num" id="staff-stat-completed">0</div>
+                            <div class="label">Completed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="status-pip" style="background:var(--teal);"></div>
+                            <div class="num" id="staff-stat-in-progress">0</div>
+                            <div class="label">In progress</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="status-pip" style="background:var(--teal);"></div>
+                            <div class="num" id="staff-stat-target">0</div>
+                            <div class="label">Target</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="status-pip" style="background:var(--teal-deep);"></div>
+                            <div class="num" id="staff-stat-percentage">0%</div>
+                            <div class="label">Target Completion Percentage</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="staff-pending" data-section="staff-pending">
+                <div class="section-title">
+                    <h3>Pending follow-ups</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="doctor-directory-filters three-col" style="margin-bottom:14px;">
+                        <input class="search-input" type="search" id="patient-search" placeholder="Search patients by name" style="margin-bottom:0;">
+                        <select id="staff-doctor-filter" class="doctor-directory-filter"><option value="all">All doctors</option></select>
+                        <select id="staff-condition-filter" class="doctor-directory-filter"><option value="all">All conditions</option></select>
+                    </div>
+                    <table class="patient-table">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th><th>Action</th></tr></thead>
+                        <tbody id="staff-patient-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section class="section-card dashboard-section" id="staff-inprogress-section" data-section="staff-inprogress-section">
+                <div class="section-title">
+                    <h3>In progress follow-ups</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <h4 style="font-size: 14px; margin: 0 0 12px 0; color: var(--teal-deep);">Assigned to you</h4>
+                    <div class="doctor-directory-filters three-col" style="margin-bottom:14px;">
+                        <input class="search-input" type="search" id="staff-inprogress-my-search" placeholder="Search patients by name" style="margin-bottom:0;">
+                        <select id="staff-inprogress-my-doctor-filter" class="doctor-directory-filter"><option value="all">All doctors</option></select>
+                        <select id="staff-inprogress-my-condition-filter" class="doctor-directory-filter"><option value="all">All conditions</option></select>
+                    </div>
+                    <table class="patient-table" style="margin-bottom: 24px;">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th><th>Action</th></tr></thead>
+                        <tbody id="staff-inprogress-my-rows"></tbody>
+                    </table>
+                    
+                    <h4 style="font-size: 14px; margin: 0 0 12px 0; color: var(--ink-soft);">Assigned to other staff</h4>
+                    <div class="doctor-directory-filters three-col" style="margin-bottom:14px;">
+                        <input class="search-input" type="search" id="staff-inprogress-others-search" placeholder="Search patients by name" style="margin-bottom:0;">
+                        <select id="staff-inprogress-others-doctor-filter" class="doctor-directory-filter"><option value="all">All doctors</option></select>
+                        <select id="staff-inprogress-others-condition-filter" class="doctor-directory-filter"><option value="all">All conditions</option></select>
+                    </div>
+                    <table class="patient-table">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th></tr></thead>
+                        <tbody id="staff-inprogress-others-rows"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="staff-completed-section" data-section="staff-completed-section">
+                <div class="section-title">
+                    <h3>Your completed follow-ups this month</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="doctor-directory-filters three-col" style="margin-bottom:14px;">
+                        <input class="search-input" type="search" id="staff-completed-search" placeholder="Search patients by name" style="margin-bottom:0;">
+                        <select id="staff-completed-doctor-filter" class="doctor-directory-filter"><option value="all">All doctors</option></select>
+                        <select id="staff-completed-condition-filter" class="doctor-directory-filter"><option value="all">All conditions</option></select>
+                    </div>
+                    <table class="patient-table">
+                        <thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="staff-completed-rows"></tbody>
+                    </table>
+                </div>
+            </section>
         </div>
     </div>
-    <div class="panel">
-        <h3>This month's follow-ups</h3>
-        <input class="search-input" type="search" id="patient-search" placeholder="Search patients by name">
-        <table class="patient-table">
-            <thead><tr><th>Patient</th><th>Condition</th><th>Status</th></tr></thead>
-            <tbody id="staff-patient-rows"></tbody>
-        </table>
+</div>
+
+<div id="admin-view" class="dash-wrap" style="display:none;">
+    <div class="dash-header">
+        <div>
+            <h1 id="admin-welcome">System overview<span class="role-badge">Admin</span></h1>
+            <p class="sub">Monitor doctors, staff activity, patient allocation, and follow-up progress.</p>
+        </div>
+    </div>
+    
+    <div class="app-layout">
+        <nav class="sidebar-nav" id="admin-sidebar-nav" aria-label="Dashboard sections">
+            <input type="search" class="sidebar-search" id="admin-sidebar-search" placeholder="Filter sections...">
+            <ul>
+                <li><a href="#admin-analysis" class="nav-link">Analysis</a></li>
+                <li><a href="#admin-workload" class="nav-link">Patients by doctor</a></li>
+                <li><a href="#admin-staff-activity" class="nav-link">Staff activity</a></li>
+                <li><a href="#admin-directory" class="nav-link">Patient directory</a></li>
+                <li><a href="#admin-critical-patients" class="nav-link">Critical patients</a></li>
+            </ul>
+        </nav>
+
+        <div class="main-content-area">
+            <section class="section-card dashboard-section" id="admin-analysis" data-section="admin-analysis">
+                <div class="section-title">
+                    <h3>Analysis</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="admin-grid">
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="admin-doctor-count">0</div><div class="label">Doctors</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="admin-staff-count">0</div><div class="label">Staff members</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="admin-patient-count">0</div><div class="label">Patients</div></div>
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="admin-followup-count">0</div><div class="label">This month's follow-ups</div></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="admin-workload" data-section="admin-workload">
+                <div class="section-title">
+                    <h3>Patients by doctor</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <input class="search-input" id="admin-doctor-search" type="search" placeholder="Search doctor by name" style="margin-bottom:14px;">
+                    <table class="patient-table"><thead><tr><th>Doctor</th><th>Patients</th><th>Completed this month</th><th>Pending</th></tr></thead><tbody id="admin-doctor-rows"></tbody></table>
+                </div>
+            </section>
+            
+            <section class="section-card dashboard-section" id="admin-staff-activity" data-section="admin-staff-activity">
+                <div class="section-title">
+                    <h3>Staff activity & Targets</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <input class="search-input" id="admin-staff-search" type="search" placeholder="Search staff by name" style="margin-bottom:14px;">
+                    <table class="patient-table"><thead><tr><th>Staff member</th><th>Target Follow-ups</th><th>Assigned Follow-ups</th><th>Completed Follow-ups</th></tr></thead><tbody id="admin-staff-rows"></tbody></table>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="admin-directory" data-section="admin-directory">
+                <div class="section-title">
+                    <h3>Patient directory</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <input class="search-input" id="admin-patient-search" type="search" placeholder="Search patient name">
+                    <div class="admin-directory-filters">
+                        <select class="admin-directory-filter" id="admin-condition-filter" aria-label="Filter by condition"><option value="all">All conditions</option></select>
+                        <select class="admin-directory-filter" id="admin-directory-doctor-filter" aria-label="Filter by doctor"><option value="all">All doctors</option></select>
+                        <select class="admin-directory-filter" id="admin-staff-filter" aria-label="Filter by assigned staff"><option value="all">All staff</option></select>
+                        <select class="admin-directory-filter" id="admin-status-filter" aria-label="Filter by status">
+                            <option value="all">All status</option>
+                            <option value="completed">Completed</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="pending">Pending</option>
+                        </select>
+                    </div>
+                    <table class="patient-table"><thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th><th>Status</th><th>Assigned Staff</th></tr></thead><tbody id="admin-patient-rows"></tbody></table>
+                </div>
+            </section>
+
+            <section class="section-card dashboard-section" id="admin-critical-patients" data-section="admin-critical-patients">
+                <div class="section-title">
+                    <h3>Critical patients this month</h3>
+                    <div class="section-tools"><button class="section-toggle"></button></div>
+                </div>
+                <div class="section-content">
+                    <div class="stat-row" style="grid-template-columns: minmax(0, 220px); margin-bottom: 20px;">
+                        <div class="stat-card"><div class="status-pip"></div><div class="num" id="admin-critical-count">0</div><div class="label">Critical patients</div></div>
+                    </div>
+                    <input class="search-input" id="admin-critical-patient-search" type="search" placeholder="Search patient name">
+                    <div class="admin-directory-filters">
+                        <select class="admin-directory-filter" id="admin-critical-condition-filter" aria-label="Filter critical patients by condition"><option value="all">All conditions</option></select>
+                        <select class="admin-directory-filter" id="admin-critical-doctor-filter" aria-label="Filter critical patients by doctor"><option value="all">All doctors</option></select>
+                    </div>
+                    <table class="patient-table"><thead><tr><th>Patient</th><th>Condition</th><th>Doctor</th><th>Critical note</th></tr></thead><tbody id="admin-critical-patient-rows"></tbody></table>
+                </div>
+            </section>
+        </div>
     </div>
 </div>
 
 <script>
+    // Modern Global Chart Defaults
+    if (window.Chart) {
+        Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+        Chart.defaults.color = '#586A63';
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(21, 35, 30, 0.92)';
+        Chart.defaults.plugins.tooltip.titleColor = '#FFFFFF';
+        Chart.defaults.plugins.tooltip.bodyColor = '#EAF3EF';
+        Chart.defaults.plugins.tooltip.titleFont = { family: "'Inter', sans-serif", size: 13, weight: '600' };
+        Chart.defaults.plugins.tooltip.bodyFont = { family: "'Inter', sans-serif", size: 12 };
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 10;
+        Chart.defaults.plugins.tooltip.boxPadding = 6;
+        Chart.defaults.plugins.tooltip.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+        Chart.defaults.plugins.legend.labels.padding = 18;
+        Chart.defaults.plugins.legend.labels.font = { family: "'Inter', sans-serif", size: 12, weight: '500' };
+    }
+
     const SUPABASE_URL = "https://ndbkbwkxitsjvyjcvdlz.supabase.co";
     const SUPABASE_KEY = "sb_publishable_vDocxeRJwjXdudGtOR2Zfw_Kwz2rVS4";
-    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
+        }
+    });
 
     let currentUser = null;
     let chartInstance = null;
+    let conditionChartInstance = null;
+    let approvalChartInstance = null;
+    let currentFollowUpChartInstance = null;
+
+    // Toggle logic for the sections' minimize buttons
+    document.addEventListener('click', e => {
+        if (e.target.closest('.section-toggle')) {
+            const btn = e.target.closest('.section-toggle');
+            btn.classList.toggle('is-collapsed');
+            const sectionContent = btn.closest('.section-title').nextElementSibling;
+            if (sectionContent && sectionContent.classList.contains('section-content')) {
+                sectionContent.classList.toggle('is-collapsed');
+            }
+        }
+    });
+
+    // Helper: Paginate Supabase requests to bypass default 1,000-row limit
+    async function fetchAllRows(tableName, selectClause = '*', configureQuery = null) {
+        let allRows = [];
+        let page = 0;
+        const pageSize = 1000;
+        while (true) {
+            let query = sb.from(tableName).select(selectClause);
+            if (configureQuery) {
+                query = configureQuery(query);
+            }
+            query = query.range(page * pageSize, (page + 1) * pageSize - 1);
+            const { data, error } = await query;
+            if (error || !data || data.length === 0) break;
+            allRows.push(...data);
+            if (data.length < pageSize) break;
+            page++;
+        }
+        return allRows;
+    }
 
     function currentMonth() {
         const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    }
+    function previousMonth() {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     }
     function last6Months() {
@@ -178,40 +651,49 @@
     }
 
     async function submitLogin() {
-        const email = normalizeLoginEmail(document.getElementById('auth-email').value);
+        const emailInput = document.getElementById('auth-email').value;
         const password = document.getElementById('auth-password').value;
         const errorEl = document.getElementById('auth-error');
         const submitButton = document.getElementById('auth-submit');
+        
         errorEl.style.color = 'var(--clay)';
         errorEl.style.display = 'none';
 
-        if (!email || !password) {
+        if (!emailInput || !password) {
             errorEl.textContent = 'Please enter both email and password.';
             errorEl.style.display = 'block';
             return;
         }
+
+        const email = normalizeLoginEmail(emailInput);
         submitButton.disabled = true;
         submitButton.textContent = 'Checking...';
-        const { error } = await sb.auth.signInWithPassword({ email, password });
+
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
         submitButton.disabled = false;
         submitButton.textContent = 'Log in';
+
         if (error) {
             if (error.message.toLowerCase().includes('email not confirmed')) {
-                errorEl.textContent = 'This email is not confirmed. Confirm it in Supabase Authentication, then try again.';
-            } else if (error.message.toLowerCase().includes('invalid login credentials')) {
-                errorEl.textContent = 'Invalid email or password. Use the exact Auth email and reset the password in Supabase if needed.';
+                errorEl.textContent = 'This email is not confirmed.';
+            } else if (error.message.toLowerCase().includes('invalid login credentials.')) {
+                errorEl.textContent = 'Invalid email or password.';
             } else {
                 errorEl.textContent = `Login failed: ${error.message}`;
             }
             errorEl.style.display = 'block';
             return;
         }
-        routeToCorrectView();
+
+        if (data.user) {
+            currentUser = data.user;
+            await routeToCorrectView();
+        }
     }
 
-    document.getElementById('auth-submit').addEventListener('click', submitLogin);
-    document.getElementById('auth-password').addEventListener('keydown', event => {
-        if (event.key === 'Enter') submitLogin();
+    document.getElementById('auth-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitLogin();
     });
 
     document.getElementById('forgot-link').addEventListener('click', async () => {
@@ -235,42 +717,55 @@
         location.reload();
     });
 
-    // ---- Route to the correct view based on which table the logged-in user appears in ----
     async function routeToCorrectView() {
         const { data: { user } } = await sb.auth.getUser();
-        if (!user) return;
-        currentUser = user;
-
-        const { data: doctorRow, error: doctorError } = await sb.from('doctors').select('full_name').eq('id', user.id).maybeSingle();
-        if (doctorError) {
-            showRoleError(`Doctor role lookup failed: ${doctorError.message}`);
+        if (!user) {
+            document.getElementById('auth-view').style.display = 'block';
+            document.getElementById('doctor-view').style.display = 'none';
+            document.getElementById('staff-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'none';
             return;
         }
-        if (doctorRow) {
+        currentUser = user;
+
+        const [adminRes, doctorRes, staffRes] = await Promise.all([
+            sb.from('admins').select('full_name').eq('id', user.id).maybeSingle(),
+            sb.from('doctors').select('full_name').eq('id', user.id).maybeSingle(),
+            sb.from('staff').select('full_name').eq('id', user.id).maybeSingle()
+        ]);
+
+        if (adminRes.data) {
+            document.getElementById('auth-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+            document.getElementById('admin-sidebar-nav').classList.add('active');
+            document.getElementById('logout-btn').style.display = 'inline-flex';
+            document.getElementById('admin-welcome').innerHTML = `Welcome, ${adminRes.data.full_name}<span class="role-badge">Admin</span>`;
+            loadAdminView();
+            return;
+        }
+
+        if (doctorRes.data) {
             document.getElementById('auth-view').style.display = 'none';
             document.getElementById('doctor-view').style.display = 'block';
+            document.getElementById('sidebar-nav').classList.add('active');
             document.getElementById('logout-btn').style.display = 'inline-flex';
-            document.getElementById('doctor-welcome').innerHTML = `Dr. ${doctorRow.full_name}'s patients<span class="role-badge">Doctor</span>`;
+            document.getElementById('doctor-welcome').innerHTML = `Dr. ${doctorRes.data.full_name}'s patients<span class="role-badge">Doctor</span>`;
             loadDoctorView();
             return;
         }
 
-        const { data: staffRow, error: staffError } = await sb.from('staff').select('full_name').eq('id', user.id).maybeSingle();
-        if (staffError) {
-            showRoleError(`Staff role lookup failed: ${staffError.message}`);
-            return;
-        }
-        if (staffRow) {
+        if (staffRes.data) {
             document.getElementById('auth-view').style.display = 'none';
             document.getElementById('staff-view').style.display = 'block';
+            document.getElementById('staff-sidebar-nav').classList.add('active');
             document.getElementById('logout-btn').style.display = 'inline-flex';
-            document.getElementById('staff-welcome').innerHTML = `Welcome, ${staffRow.full_name}<span class="role-badge">Staff</span>`;
+            document.getElementById('staff-welcome').innerHTML = `Welcome, ${staffRes.data.full_name}<span class="role-badge">Staff</span>`;
             loadStaffView();
             return;
         }
 
-        showRoleError(`No staff or doctor role is registered for ${user.email}. Auth ID: ${user.id}. Run seed.sql in Supabase SQL Editor.`);
-        await sb.auth.signOut();
+        showRoleError(`No staff, doctor, or admin role is registered for ${user.email}.`);
     }
 
     function showRoleError(message) {
@@ -280,139 +775,1067 @@
         errorEl.style.display = 'block';
     }
 
-    // ================= DOCTOR VIEW =================
-    async function loadDoctorView() {
-        const { data: patients } = await sb.from('patients').select('*').eq('doctor_id', currentUser.id);
+    // --- Admin View ---
+    async function loadAdminView() {
         const month = currentMonth();
-        const tbody = document.getElementById('doctor-patient-rows');
-        tbody.innerHTML = '';
+        const [doctors, staff, patients, followUps] = await Promise.all([
+            fetchAllRows('doctors', 'id, full_name, email', q => q.order('full_name')),
+            fetchAllRows('staff', 'id, full_name, email, target_followup', q => q.order('full_name')),
+            fetchAllRows('patients', 'id, doctor_id, patient_label, chronic_condition, created_at', q => q.order('patient_label')),
+            fetchAllRows('follow_ups', 'id, patient_id, status, assigned_staff_id, updated_by, critical_condition, critical_note, created_at', q => q.eq('month', month))
+        ]);
+        
+        const doctorRows = doctors || [];
+        const staffRows = staff || [];
+        const patientRows = patients || [];
+        const followUpRows = followUps || [];
 
-        let completedCount = 0, pendingCount = 0;
-        if (!patients || patients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No patients on file yet.</td></tr>';
+        const doctorsById = new Map(doctorRows.map(doctor => [doctor.id, doctor]));
+        const staffById = new Map(staffRows.map(member => [member.id, member]));
+        
+        document.getElementById('admin-doctor-count').textContent = doctorRows.length;
+        document.getElementById('admin-staff-count').textContent = staffRows.length;
+        document.getElementById('admin-patient-count').textContent = patientRows.length;
+        document.getElementById('admin-followup-count').textContent = followUpRows.length;
+        
+        // Render function for Admin tables to support new search inputs
+        const renderAdminTables = () => {
+            const docSearch = document.getElementById('admin-doctor-search').value.trim().toLowerCase();
+            const staffSearch = document.getElementById('admin-staff-search').value.trim().toLowerCase();
+            
+            const filteredDoctors = doctorRows.filter(doc => doc.full_name.toLowerCase().includes(docSearch));
+            document.getElementById('admin-doctor-rows').innerHTML = filteredDoctors.map(doctor => {
+                const assigned = patientRows.filter(patient => patient.doctor_id === doctor.id);
+                const completed = followUpRows.filter(row => row.status === 'completed' && assigned.some(patient => patient.id === row.patient_id)).length;
+                return `<tr><td>${doctor.full_name}</td><td>${assigned.length}</td><td>${completed}</td><td>${assigned.length - completed}</td></tr>`;
+            }).join('') || '<tr><td colspan="4" class="empty-state">No doctors match the search.</td></tr>';
+            
+            const filteredStaff = staffRows.filter(st => st.full_name.toLowerCase().includes(staffSearch));
+            document.getElementById('admin-staff-rows').innerHTML = filteredStaff.map(member => {
+                const assignedFollowUps = followUpRows.filter(row => row.assigned_staff_id === member.id);
+                const completedFollowUps = assignedFollowUps.filter(row => row.status === 'completed');
+                return `<tr>
+                    <td>${member.full_name}</td>
+                    <td>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <input type="number" min="0" step="1" class="admin-target-input" style="width: 70px; padding: 6px; border-radius: 6px; border: 1px solid var(--line); font-family: var(--sans);" data-staff-id="${member.id}" value="${member.target_followup ?? 0}">
+                            <button class="view-mode-btn save-target-btn" style="border: 1px solid var(--line);" data-staff-id="${member.id}">Save</button>
+                        </div>
+                    </td>
+                    <td>${assignedFollowUps.length}</td>
+                    <td>${completedFollowUps.length}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="4" class="empty-state">No staff match the search.</td></tr>';
+
+            // Attach event listeners to Save Target buttons
+            document.querySelectorAll('.save-target-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const staffId = e.target.getAttribute('data-staff-id');
+                    const input = document.querySelector(`.admin-target-input[data-staff-id="${staffId}"]`);
+                    const newTarget = Number.parseInt(input.value, 10);
+
+                    if (!Number.isInteger(newTarget) || newTarget < 0) {
+                        alert('Enter a whole number greater than or equal to 0.');
+                        return;
+                    }
+                    
+                    const oldText = e.target.textContent;
+                    e.target.textContent = '...';
+                    e.target.disabled = true;
+
+                    const { error } = await sb.from('staff').update({ target_followup: newTarget }).eq('id', staffId);
+                    
+                    if (!error) {
+                        // Update local array data to persist across re-renders
+                        const staffMember = staffRows.find(s => s.id === staffId);
+                        if(staffMember) staffMember.target_followup = newTarget;
+                        
+                        e.target.textContent = 'Saved!';
+                        setTimeout(() => {
+                            e.target.textContent = oldText;
+                            e.target.disabled = false;
+                        }, 2000);
+                    } else {
+                        alert('Error saving target update: ' + error.message);
+                        e.target.textContent = oldText;
+                        e.target.disabled = false;
+                    }
+                });
+            });
+        };
+
+        document.getElementById('admin-doctor-search').addEventListener('input', renderAdminTables);
+        document.getElementById('admin-staff-search').addEventListener('input', renderAdminTables);
+        renderAdminTables();
+
+        const criticalDoctorFilter = document.getElementById('admin-critical-doctor-filter');
+        const criticalPatientSearch = document.getElementById('admin-critical-patient-search');
+        const criticalConditionFilter = document.getElementById('admin-critical-condition-filter');
+        criticalDoctorFilter.innerHTML = '<option value="all">All doctors</option>' + doctorRows.map(doctor => `<option value="${doctor.id}">${doctor.full_name}</option>`).join('');
+
+        const renderAdminCriticalPatients = () => {
+            const query = criticalPatientSearch.value.trim().toLowerCase();
+            const selectedCondition = criticalConditionFilter.value;
+            const selectedDoctorId = criticalDoctorFilter.value;
+            const criticalPatients = patientRows.filter(patient => {
+                const followUp = followUpRows.find(row => row.patient_id === patient.id);
+                return followUp?.critical_condition === 'critical'
+                    && patient.patient_label.toLowerCase().includes(query)
+                    && (selectedCondition === 'all' || patient.chronic_condition === selectedCondition)
+                    && (selectedDoctorId === 'all' || patient.doctor_id === selectedDoctorId);
+            });
+
+            document.getElementById('admin-critical-count').textContent = criticalPatients.length;
+            document.getElementById('admin-critical-patient-rows').innerHTML = criticalPatients.map(patient => {
+                const followUp = followUpRows.find(row => row.patient_id === patient.id);
+                return `<tr>
+                    <td>${patient.patient_label}</td>
+                    <td>${patient.chronic_condition}</td>
+                    <td>${doctorsById.get(patient.doctor_id)?.full_name || 'Unknown doctor'}</td>
+                    <td style="color:var(--clay); font-weight:500;">${followUp.critical_note || 'Critical follow-up flagged.'}</td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="4" class="empty-state">No critical patients match this doctor filter.</td></tr>';
+        };
+
+        criticalDoctorFilter.addEventListener('change', renderAdminCriticalPatients);
+    criticalPatientSearch.addEventListener('input', renderAdminCriticalPatients);
+        
+        const conditionFilter = document.getElementById('admin-condition-filter');
+        const directoryDoctorFilter = document.getElementById('admin-directory-doctor-filter');
+        const staffFilter = document.getElementById('admin-staff-filter');
+        const statusFilterEl = document.getElementById('admin-status-filter');
+        
+        const conditions = [...new Set(patientRows.map(patient => patient.chronic_condition).filter(Boolean))].sort((first, second) => first.localeCompare(second));
+        
+        conditionFilter.innerHTML = '<option value="all">All conditions</option>' + conditions.map(condition => `<option value="${condition}">${condition}</option>`).join('');
+        criticalConditionFilter.innerHTML = '<option value="all">All conditions</option>' + conditions.map(condition => `<option value="${condition}">${condition}</option>`).join('');
+        directoryDoctorFilter.innerHTML = '<option value="all">All doctors</option>' + doctorRows.map(doctor => `<option value="${doctor.id}">${doctor.full_name}</option>`).join('');
+        
+        const hasUnassigned = patientRows.some(patient => !followUpRows.some(row => row.patient_id === patient.id));
+        staffFilter.innerHTML = '<option value="all">All staff</option>' + staffRows.map(member => `<option value="${member.id}">${member.full_name}</option>`) + (hasUnassigned ? '<option value="__unassigned__">Unassigned</option>' : '');
+        
+        const renderPatients = () => {
+            const query = document.getElementById('admin-patient-search').value.trim().toLowerCase();
+            const condition = conditionFilter.value;
+            const doctorId = directoryDoctorFilter.value;
+            const staffId = staffFilter.value;
+            const statusFilterVal = statusFilterEl.value;
+            
+            const filteredPatients = patientRows.filter(patient => {
+                const update = followUpRows.find(row => row.patient_id === patient.id);
+                const status = update?.status || 'pending';
+                return patient.patient_label.toLowerCase().includes(query)
+                    && (condition === 'all' || patient.chronic_condition === condition)
+                    && (doctorId === 'all' || patient.doctor_id === doctorId)
+                    && (staffId === 'all' || (staffId === '__unassigned__' ? !update?.assigned_staff_id : update?.assigned_staff_id === staffId))
+                    && (statusFilterVal === 'all' || status === statusFilterVal);
+            });
+            
+            document.getElementById('admin-patient-rows').innerHTML = filteredPatients.map(patient => {
+                const update = followUpRows.find(row => row.patient_id === patient.id);
+                const status = update?.status || 'pending';
+                const statusFormatted = status === 'completed' 
+                    ? '<span class="status-pill completed">Completed</span>' 
+                    : status === 'in_progress' 
+                    ? '<span class="status-pill in_progress">In Progress</span>' 
+                    : '<span class="status-pill pending">Pending</span>';
+                
+                const assignedStaff = update?.assigned_staff_id;
+                const assignmentControl = status === 'pending'
+                    ? `<select class="admin-assignment-select admin-directory-filter" data-patient-id="${patient.id}" data-followup-id="${update?.id || ''}" aria-label="Assign ${patient.patient_label} to staff">
+                        <option value="">Unassigned</option>
+                        ${staffRows.map(member => `<option value="${member.id}" ${assignedStaff === member.id ? 'selected' : ''}>${member.full_name}</option>`).join('')}
+                       </select>`
+                    : (staffById.get(assignedStaff)?.full_name || 'Not assigned');
+                return `<tr><td>${patient.patient_label}</td><td>${patient.chronic_condition}</td><td>${doctorsById.get(patient.doctor_id)?.full_name || '—'}</td><td>${statusFormatted}</td><td>${assignmentControl}</td></tr>`;
+            }).join('') || '<tr><td colspan="5" class="empty-state">No patients match.</td></tr>';
+
+            document.querySelectorAll('.admin-assignment-select').forEach(select => {
+                select.addEventListener('change', async () => {
+                    const patientId = select.getAttribute('data-patient-id');
+                    const followUpId = select.getAttribute('data-followup-id');
+                    const assignedStaffId = select.value || null;
+                    select.disabled = true;
+
+                    const assignment = { assigned_staff_id: assignedStaffId };
+                    const result = followUpId
+                        ? await sb.from('follow_ups').update(assignment).eq('id', followUpId)
+                        : await sb.from('follow_ups').insert({ patient_id: patientId, month, status: 'pending', ...assignment }).select('id, patient_id, status, assigned_staff_id').single();
+
+                    if (result.error) {
+                        alert('Error saving staff assignment: ' + result.error.message);
+                    } else {
+                        const followUp = followUpRows.find(row => row.id === followUpId);
+                        if (followUp) {
+                            followUp.assigned_staff_id = assignedStaffId;
+                        } else {
+                            followUpRows.push(result.data);
+                        }
+                        renderPatients();
+                    }
+                    select.disabled = false;
+                });
+            });
+        };
+        
+        document.getElementById('admin-patient-search').addEventListener('input', renderPatients);
+        conditionFilter.addEventListener('change', renderPatients);
+        directoryDoctorFilter.addEventListener('change', renderPatients);
+        staffFilter.addEventListener('change', renderPatients);
+        statusFilterEl.addEventListener('change', renderPatients);
+        renderPatients();
+        criticalConditionFilter.addEventListener('change', renderAdminCriticalPatients);
+        renderAdminCriticalPatients();
+    }
+
+    // --- Doctor View ---
+    async function loadDoctorView() {
+        const month = currentMonth();
+        const summaryPatients = await fetchAllRows('patients', 'id, patient_label, created_at, chronic_condition', q => q.eq('doctor_id', currentUser.id));
+        const summaryIds = summaryPatients.map(patient => patient.id);
+        
+        let currentFollowUps = [];
+        if (summaryIds.length) {
+            const monthFollowUps = await fetchAllRows('follow_ups', 'patient_id, month, status, approval_status, updated_by, critical_condition, critical_note', q => q.eq('month', month));
+            const patientSet = new Set(summaryIds);
+            currentFollowUps = monthFollowUps.filter(f => patientSet.has(f.patient_id));
         }
-        for (const patient of (patients || [])) {
-            const { data: followUp } = await sb.from('follow_ups').select('*').eq('patient_id', patient.id).eq('month', month).maybeSingle();
-            const status = followUp ? followUp.status : 'pending';
-            if (status === 'completed') completedCount++; else pendingCount++;
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${patient.patient_label}</td><td>${patient.chronic_condition}</td><td><span class="status-pill ${status}">${status === 'completed' ? 'Completed' : 'Pending'}</span></td>`;
-            tbody.appendChild(row);
-        }
-        document.getElementById('stat-total').textContent = (patients || []).length;
+        
+        const completedCount = currentFollowUps.filter(followUp => followUp.status === 'completed').length;
+        const pendingCount = summaryIds.length - completedCount;
+        
+        document.getElementById('stat-total').textContent = summaryIds.length;
         document.getElementById('stat-completed').textContent = completedCount;
         document.getElementById('stat-pending').textContent = pendingCount;
-        document.getElementById('stat-added').textContent = (patients || []).filter(patient => patient.created_at.slice(0, 7) === month).length;
-        const completionRate = patients && patients.length > 0
-            ? Math.round((completedCount / patients.length) * 100)
-            : 0;
-        document.getElementById('stat-completion-rate').textContent = `${completionRate}%`;
-        loadDoctorChart(patients || []);
-    }
+        document.getElementById('stat-added').textContent = summaryPatients.filter(patient => patient.created_at && patient.created_at.slice(0, 7) === month).length;
+        document.getElementById('stat-completion-rate').textContent = summaryIds.length
+            ? `${Math.round((completedCount / summaryIds.length) * 100)}%`
+            : '0%';
 
-    async function loadDoctorChart(patients) {
-        const months = last6Months();
-        const patientIds = patients.map(p => p.id);
-        const completedByMonth = [], pendingByMonth = [];
-        for (const m of months) {
-            if (patientIds.length === 0) { completedByMonth.push(0); pendingByMonth.push(0); continue; }
-            const { data: rows } = await sb.from('follow_ups').select('status').in('patient_id', patientIds).eq('month', m);
-            const completed = (rows || []).filter(r => r.status === 'completed').length;
-            completedByMonth.push(completed);
-            pendingByMonth.push(patientIds.length - completed);
-        }
-        const ctx = document.getElementById('trend-chart');
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: { labels: months, datasets: [
-                { label: 'Completed', data: completedByMonth, backgroundColor: '#1D5B4F' },
-                { label: 'Pending', data: pendingByMonth, backgroundColor: '#EADDCF' }
-            ]},
-            options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
-        });
-    }
-
-    // ================= STAFF VIEW =================
-    async function loadStaffView() {
-        const { data: doctors } = await sb.from('doctors').select('id, full_name').order('full_name');
-        const doctorSelect = document.getElementById('doctor-select');
-        doctorSelect.innerHTML = '';
-        (doctors || []).forEach(doc => {
-            doctorSelect.innerHTML += `<option value="${doc.id}">${doc.full_name}</option>`;
-        });
-        doctorSelect.addEventListener('change', refreshStaffPatientTable);
-        if (doctors && doctors.length > 0) refreshStaffPatientTable();
-    }
-
-    document.getElementById('add-patient-btn').addEventListener('click', async () => {
-        const doctorId = document.getElementById('doctor-select').value;
-        const label = document.getElementById('new-patient-label').value.trim();
-        const condition = document.getElementById('new-patient-condition').value.trim();
-        if (!doctorId || !label || !condition) return;
-        await sb.from('patients').insert({ doctor_id: doctorId, patient_label: label, chronic_condition: condition });
-        document.getElementById('new-patient-label').value = '';
-        document.getElementById('new-patient-condition').value = '';
-        refreshStaffPatientTable();
-    });
-
-    async function refreshStaffPatientTable() {
-        const doctorId = document.getElementById('doctor-select').value;
-        const tbody = document.getElementById('staff-patient-rows');
-        tbody.innerHTML = '';
-        if (!doctorId) return;
-
-        const { data: patients } = await sb.from('patients').select('*').eq('doctor_id', doctorId);
-        const month = currentMonth();
-
-        if (!patients || patients.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No patients yet for this doctor.</td></tr>';
-            return;
+        const pendingCard = document.getElementById('card-pending-stat');
+        if (summaryIds.length && (pendingCount / summaryIds.length) > 0.20) {
+            pendingCard.classList.add('alert-threshold');
+        } else {
+            pendingCard.classList.remove('alert-threshold');
         }
 
-        for (const patient of patients) {
-            const { data: followUp } = await sb.from('follow_ups').select('*').eq('patient_id', patient.id).eq('month', month).maybeSingle();
-            const status = followUp ? followUp.status : 'pending';
-            const row = document.createElement('tr');
-            row.dataset.patientName = patient.patient_label.toLowerCase();
-            row.innerHTML = `
+        loadConditionChart(summaryPatients);
+        loadReportStatusChart(summaryPatients);
+        loadCurrentFollowUpChart(summaryPatients);
+        renderCriticalPatients(summaryPatients, currentFollowUps);
+        populatePortalDoctorFilters(summaryPatients);
+        renderPortalDoctorPatients(summaryPatients, currentFollowUps);
+        loadFollowUpChart(summaryPatients);
+    }
+
+    document.getElementById('doctor-patient-search').addEventListener('input', () => renderPortalDoctorPatients(window.portalDoctorPatients || [], window.portalDoctorFollowUps || []));
+    document.getElementById('doctor-condition-filter').addEventListener('change', () => renderPortalDoctorPatients(window.portalDoctorPatients || [], window.portalDoctorFollowUps || []));
+    document.getElementById('doctor-status-filter').addEventListener('change', () => renderPortalDoctorPatients(window.portalDoctorPatients || [], window.portalDoctorFollowUps || []));
+    document.getElementById('critical-patient-search').addEventListener('input', () => renderCriticalPatients(window.portalDoctorPatients || [], window.portalDoctorFollowUps || []));
+    document.getElementById('critical-condition-filter').addEventListener('change', () => renderCriticalPatients(window.portalDoctorPatients || [], window.portalDoctorFollowUps || []));
+
+    function populatePortalDoctorFilters(patients) {
+        const conditionFilter = document.getElementById('doctor-condition-filter');
+        const criticalFilter = document.getElementById('critical-condition-filter');
+        const selectedCondition = conditionFilter.value;
+        const selectedCritCondition = criticalFilter.value;
+        const conditions = [...new Set(patients.map(patient => patient.chronic_condition).filter(Boolean))].sort((first, second) => first.localeCompare(second));
+        
+        const optionsHTML = '<option value="all">All conditions</option>' + conditions.map(condition => `<option value="${condition}">${condition}</option>`).join('');
+        conditionFilter.innerHTML = optionsHTML;
+        criticalFilter.innerHTML = optionsHTML;
+        
+        conditionFilter.value = conditions.includes(selectedCondition) ? selectedCondition : 'all';
+        criticalFilter.value = conditions.includes(selectedCritCondition) ? selectedCritCondition : 'all';
+    }
+
+    function renderPortalDoctorPatients(patients, followUps) {
+        window.portalDoctorPatients = patients;
+        window.portalDoctorFollowUps = followUps;
+        const query = document.getElementById('doctor-patient-search').value.trim().toLowerCase();
+        const condition = document.getElementById('doctor-condition-filter').value;
+        const statusFilter = document.getElementById('doctor-status-filter').value;
+        const followUpByPatient = new Map(followUps.map(followUp => [followUp.patient_id, followUp]));
+        const matchingPatients = patients.filter(patient => {
+            const status = followUpByPatient.get(patient.id)?.status || 'pending';
+            return patient.patient_label.toLowerCase().includes(query)
+                && (condition === 'all' || patient.chronic_condition === condition)
+                && (statusFilter === 'all' || status === statusFilter);
+        });
+        document.getElementById('doctor-patient-rows').innerHTML = matchingPatients.map(patient => {
+            const followUp = followUpByPatient.get(patient.id);
+            const status = followUp?.status || 'pending';
+            const statusLabel = status === 'completed' ? 'Completed' : status === 'in_progress' ? 'In Progress' : 'Pending';
+            
+            return `<tr class="clickable" onclick="toggleAccordion(this)">
                 <td>${patient.patient_label}</td>
                 <td>${patient.chronic_condition}</td>
-                <td><label class="check-label"><input class="follow-up-check" type="checkbox" ${status === 'completed' ? 'checked' : ''} data-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}"><span>${status === 'completed' ? 'Completed' : 'Pending'}</span></label></td>
-            `;
-            tbody.appendChild(row);
-        }
+                <td><span class="status-pill ${status}">${statusLabel}</span></td>
+            </tr>
+            <tr class="accordion-detail-row">
+                <td colspan="3">
+                    <div class="accordion-content">
+                        <strong>Patient ID:</strong> ${patient.id}<br>
+                        <strong>Registered:</strong> ${patient.created_at ? patient.created_at.slice(0, 10) : 'N/A'}<br>
+                        <strong>Latest Update Notes:</strong> ${followUp?.critical_note || 'No active notes or flags.'}
+                    </div>
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="3" class="empty-state">No patients match the selected filters.</td></tr>';
+    }
 
-        tbody.querySelectorAll('.follow-up-check').forEach(check => {
+    function renderCriticalPatients(patients, followUps) {
+        const query = document.getElementById('critical-patient-search').value.trim().toLowerCase();
+        const condition = document.getElementById('critical-condition-filter').value;
+        const followUpByPatient = new Map(followUps.map(followUp => [followUp.patient_id, followUp]));
+        
+        const criticalPatients = patients.filter(patient => {
+            const followUp = followUpByPatient.get(patient.id);
+            return followUp && followUp.critical_condition === 'critical'
+                && patient.patient_label.toLowerCase().includes(query)
+                && (condition === 'all' || patient.chronic_condition === condition);
+        });
+
+        document.getElementById('doctor-critical-count').textContent = criticalPatients.length;
+        document.getElementById('critical-patient-rows').innerHTML = criticalPatients.map(patient => {
+            const followUp = followUpByPatient.get(patient.id);
+            return `<tr>
+                <td>${patient.patient_label}</td>
+                <td>${patient.chronic_condition}</td>
+                <td style="color:var(--clay); font-weight:500;">${followUp.critical_note || 'Critical follow-up flagged.'}</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="3" class="empty-state">No critical patients found for these filters.</td></tr>';
+    }
+
+    function toggleAccordion(tr) {
+        const nextRow = tr.nextElementSibling;
+        if (nextRow && nextRow.classList.contains('accordion-detail-row')) {
+            nextRow.classList.toggle('open');
+        }
+    }
+
+    function centerTextPlugin(percentage) {
+        return {
+            id: 'centerText',
+            afterDraw(chart) {
+                const context = chart.ctx;
+                const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+                const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+                context.save();
+                context.textAlign = 'center';
+                context.textBaseline = 'middle';
+
+                context.font = '700 32px Inter, sans-serif';
+                context.fillStyle = '#1D5B4F';
+                context.fillText(`${percentage}%`, centerX, centerY - 6);
+
+                context.font = '600 11px Inter, sans-serif';
+                context.fillStyle = '#586A63';
+                context.fillText('COMPLETED', centerX, centerY + 18);
+
+                context.restore();
+            }
+        };
+    }
+
+    function previousSixMonths() {
+        const months = [];
+        const date = new Date();
+        for (let offset = 5; offset >= 0; offset--) {
+            const month = new Date(date.getFullYear(), date.getMonth() - offset, 1);
+            months.push(`${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`);
+        }
+        return months;
+    }
+
+    async function loadFollowUpChart(patients) {
+        const eligiblePatients = patients.filter(patient => !patient.created_at || patient.created_at.slice(0, 7) <= currentMonth());
+        const months = previousSixMonths();
+        const allFollowUps = await fetchAllRows('follow_ups', 'patient_id, status, month', q => q.in('month', months));
+        const followUpByMonthAndPatient = new Map();
+        allFollowUps.forEach(fu => {
+            followUpByMonthAndPatient.set(`${fu.month}_${fu.patient_id}`, fu);
+        });
+
+        const results = months.map(month => {
+            const monthPatients = eligiblePatients.filter(patient => !patient.created_at || patient.created_at.slice(0, 7) <= month);
+            let completed = 0;
+            monthPatients.forEach(p => {
+                const fu = followUpByMonthAndPatient.get(`${month}_${p.id}`);
+                if (fu && fu.status === 'completed') completed++;
+            });
+            return { month, completed, pending: Math.max(monthPatients.length - completed, 0) };
+        });
+
+        const labels = months.map(month => {
+            const [year, monthNumber] = month.split('-');
+            return new Date(Number(year), Number(monthNumber) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+        });
+
+        const canvas = document.getElementById('followup-chart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const lineGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        lineGradient.addColorStop(0, 'rgba(184, 98, 46, 0.22)');
+        lineGradient.addColorStop(1, 'rgba(184, 98, 46, 0.0)');
+
+        if (chartInstance) chartInstance.destroy();
+        const patientCountMax = Math.max(10, ...results.flatMap(result => [result.completed + result.pending]), patients.length || 0);
+
+        chartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Completed',
+                        data: results.map(result => result.completed),
+                        backgroundColor: '#1D5B4F',
+                        hoverBackgroundColor: '#247263',
+                        borderRadius: 6,
+                        stack: 'followups',
+                        barThickness: 28
+                    },
+                    {
+                        label: 'Pending',
+                        data: results.map(result => result.pending),
+                        backgroundColor: '#E2EBE6',
+                        hoverBackgroundColor: '#CBD8D3',
+                        borderRadius: 6,
+                        stack: 'followups',
+                        barThickness: 28
+                    },
+                    {
+                        type: 'line',
+                        label: 'Completion rate',
+                        data: results.map(result => result.completed + result.pending ? Math.round((result.completed / (result.completed + result.pending)) * 100) : 0),
+                        borderColor: '#B8622E',
+                        backgroundColor: lineGradient,
+                        fill: true,
+                        yAxisID: 'percentage',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#B8622E',
+                        pointBorderColor: '#FFFFFF',
+                        pointBorderWidth: 2,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', axis: 'x', intersect: false },
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { color: '#586A63', font: { weight: '500' } }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        suggestedMax: patientCountMax,
+                        title: { display: true, text: 'Patients', color: '#586A63', font: { weight: '600' } },
+                        grid: { color: 'rgba(226, 235, 230, 0.7)', borderDash: [4, 4] },
+                        ticks: { precision: 0, color: '#586A63' }
+                    },
+                    percentage: {
+                        beginAtZero: true,
+                        max: 100,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { callback: value => `${value}%`, color: '#B8622E', font: { weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            title: items => `Month: ${items[0].label}`,
+                            label: context => context.dataset.yAxisID === 'percentage'
+                                ? ` ${context.dataset.label}: ${context.raw}%`
+                                : ` ${context.dataset.label}: ${context.raw} patients`
+                        }
+                    }
+                }
+            }
+        });
+
+        const tabularBody = document.querySelector('#followup-tabular-data tbody');
+        if (tabularBody) {
+            tabularBody.innerHTML = results.map((r, idx) => `<tr><td>${labels[idx]}</td><td>${r.completed}</td><td>${r.pending}</td></tr>`).join('');
+        }
+    }
+
+    async function loadCurrentFollowUpChart(patients) {
+        const eligiblePatients = patients.filter(patient => !patient.created_at || patient.created_at.slice(0, 7) <= currentMonth());
+        const monthFollowUps = await fetchAllRows('follow_ups', 'patient_id, status', q => q.eq('month', currentMonth()));
+        const patientSet = new Set(eligiblePatients.map(p => p.id));
+        const completed = monthFollowUps.filter(row => patientSet.has(row.patient_id) && row.status === 'completed').length;
+        const pending = Math.max(eligiblePatients.length - completed, 0);
+        const percentage = eligiblePatients.length ? Math.round((completed / eligiblePatients.length) * 100) : 0;
+        
+        const canvas = document.getElementById('current-followup-chart');
+        if (!canvas) return;
+
+        if (currentFollowUpChartInstance) currentFollowUpChartInstance.destroy();
+
+        currentFollowUpChartInstance = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending & In Progress'],
+                datasets: [{
+                    data: [completed, pending],
+                    backgroundColor: ['#1D5B4F', '#E2EBE6'],
+                    hoverBackgroundColor: ['#247263', '#CBD8D3'],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 4,
+                    borderRadius: 8,
+                    spacing: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '74%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: context => ` ${context.label}: ${context.raw} patients` } }
+                }
+            },
+            plugins: [centerTextPlugin(percentage)]
+        });
+    }
+
+    async function loadReportStatusChart(patients) {
+        const months = previousSixMonths();
+        const eligiblePatients = patients.filter(patient => !patient.created_at || patient.created_at.slice(0, 7) <= currentMonth());
+        const allFollowUps = await fetchAllRows('follow_ups', 'patient_id, month, approval_status', q => q.in('month', months));
+        const followUpMap = new Map();
+        allFollowUps.forEach(fu => {
+            followUpMap.set(`${fu.month}_${fu.patient_id}`, fu);
+        });
+
+        const results = months.map(month => {
+            const monthPatients = eligiblePatients.filter(patient => !patient.created_at || patient.created_at.slice(0, 7) <= month);
+            let approved = 0;
+            let rejected = 0;
+            monthPatients.forEach(p => {
+                const fu = followUpMap.get(`${month}_${p.id}`);
+                if (fu?.approval_status === 'approved') approved++;
+                if (fu?.approval_status === 'rejected') rejected++;
+            });
+            const reviewed = Math.min(approved + rejected, monthPatients.length);
+            return {
+                approved: Math.min(approved, monthPatients.length),
+                rejected: Math.min(rejected, monthPatients.length),
+                pct: reviewed ? Math.round((approved / reviewed) * 100) : 0,
+            };
+        });
+
+        const labels = months.map(month => {
+            const [year, monthNumber] = month.split('-');
+            return new Date(Number(year), Number(monthNumber) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+        });
+
+        const canvas = document.getElementById('approval-chart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const blueGradient = ctx.createLinearGradient(0, 0, 0, 300);
+        blueGradient.addColorStop(0, 'rgba(53, 104, 168, 0.22)');
+        blueGradient.addColorStop(1, 'rgba(53, 104, 168, 0.0)');
+
+        if (approvalChartInstance) approvalChartInstance.destroy();
+
+        approvalChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Approved',
+                        data: results.map(result => result.approved),
+                        backgroundColor: '#1D5B4F',
+                        hoverBackgroundColor: '#247263',
+                        borderRadius: 6,
+                        barThickness: 20
+                    },
+                    {
+                        label: 'Rejected',
+                        data: results.map(result => result.rejected),
+                        backgroundColor: '#D97736',
+                        hoverBackgroundColor: '#B8622E',
+                        borderRadius: 6,
+                        barThickness: 20
+                    },
+                    {
+                        type: 'line',
+                        label: 'Approval %',
+                        data: results.map(result => result.pct),
+                        borderColor: '#3568A8',
+                        backgroundColor: blueGradient,
+                        fill: true,
+                        yAxisID: 'percentage',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#3568A8',
+                        pointBorderColor: '#FFFFFF',
+                        pointBorderWidth: 2,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', axis: 'x', intersect: false },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#586A63', font: { weight: '500' } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Reports', color: '#586A63', font: { weight: '600' } },
+                        grid: { color: 'rgba(226, 235, 230, 0.7)', borderDash: [4, 4] },
+                        ticks: { precision: 0, color: '#586A63' }
+                    },
+                    percentage: {
+                        beginAtZero: true,
+                        max: 100,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { callback: value => `${value}%`, color: '#3568A8', font: { weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            title: items => `Month: ${items[0].label}`,
+                            label: context => context.dataset.yAxisID === 'percentage'
+                                ? ` ${context.dataset.label}: ${context.raw}%`
+                                : ` ${context.dataset.label}: ${context.raw} reports`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function loadConditionChart(patients) {
+        const counts = new Map();
+        patients.forEach(patient => {
+            const condition = (patient.chronic_condition || 'Unspecified').trim() || 'Unspecified';
+            counts.set(condition, (counts.get(condition) || 0) + 1);
+        });
+        const labels = [...counts.keys()].sort((first, second) => counts.get(second) - counts.get(first));
+        const canvas = document.getElementById('condition-chart');
+        if (!canvas) return;
+
+        const chartWrap = canvas.parentElement;
+        chartWrap.style.height = `${Math.max(280, labels.length * 36 + 40)}px`;
+
+        if (conditionChartInstance) conditionChartInstance.destroy();
+
+        const colors = ['#1D5B4F', '#247263', '#3568A8', '#52998B', '#B8622E', '#7A9A8B'];
+
+        conditionChartInstance = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    data: labels.map(label => counts.get(label)),
+                    backgroundColor: labels.map((_, idx) => colors[idx % colors.length]),
+                    borderRadius: 6,
+                    barThickness: 18,
+                    maxBarThickness: 22
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, color: '#586A63' },
+                        title: { display: true, text: 'Patients', color: '#586A63', font: { weight: '600' } },
+                        grid: { color: 'rgba(226, 235, 230, 0.7)', borderDash: [4, 4] }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { color: '#15231E', font: { weight: '500' } }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: context => ` ${context.label}: ${context.raw} patients` } }
+                }
+            },
+            plugins: [{
+                id: 'conditionBarCounts',
+                afterDatasetsDraw(chart) {
+                    const context = chart.ctx;
+                    context.save();
+                    context.font = '600 12px Inter, sans-serif';
+                    context.fillStyle = '#1D5B4F';
+                    context.textAlign = 'left';
+                    context.textBaseline = 'middle';
+                    chart.getDatasetMeta(0).data.forEach((bar, index) => {
+                        context.fillText(chart.data.datasets[0].data[index], bar.x + 8, bar.y);
+                    });
+                    context.restore();
+                }
+            }]
+        });
+    }
+
+    // --- Staff View ---
+    let staffCurrentPatients = [];
+    let staffCurrentFollowUps = [];
+    let staffAllDoctors = [];
+    let windowStaffAllStaff = [];
+
+    async function loadStaffView() {
+        const [doctors, patients, followUps, staffMembers] = await Promise.all([
+            fetchAllRows('doctors', 'id, full_name', q => q.order('full_name')),
+            fetchAllRows('patients', '*', q => q.order('patient_label')),
+            fetchAllRows('follow_ups', 'id, patient_id, status, assigned_staff_id, approval_status, critical_condition, critical_note, updated_by', q => q.eq('month', currentMonth())),
+            fetchAllRows('staff', 'id, full_name, target_followup')
+        ]);
+        
+        staffAllDoctors = doctors || [];
+        staffCurrentPatients = patients || [];
+        staffCurrentFollowUps = followUps || [];
+        windowStaffAllStaff = staffMembers || [];
+        
+        // Setup Event Listeners for Filters
+        document.getElementById('patient-search').addEventListener('input', renderStaffPatientTable);
+        document.getElementById('staff-doctor-filter').addEventListener('change', renderStaffPatientTable);
+        document.getElementById('staff-condition-filter').addEventListener('change', renderStaffPatientTable);
+        
+        document.getElementById('staff-inprogress-my-search').addEventListener('input', renderStaffPatientTable);
+        document.getElementById('staff-inprogress-my-doctor-filter').addEventListener('change', renderStaffPatientTable);
+        document.getElementById('staff-inprogress-my-condition-filter').addEventListener('change', renderStaffPatientTable);
+
+        document.getElementById('staff-inprogress-others-search').addEventListener('input', renderStaffPatientTable);
+        document.getElementById('staff-inprogress-others-doctor-filter').addEventListener('change', renderStaffPatientTable);
+        document.getElementById('staff-inprogress-others-condition-filter').addEventListener('change', renderStaffPatientTable);
+        
+        document.getElementById('staff-completed-search').addEventListener('input', renderStaffPatientTable);
+        document.getElementById('staff-completed-doctor-filter').addEventListener('change', renderStaffPatientTable);
+        document.getElementById('staff-completed-condition-filter').addEventListener('change', renderStaffPatientTable);
+
+        renderStaffPatientTable();
+    }
+
+    function renderStaffPatientTable() {
+        // Pending Filters
+        const pendingQuery = document.getElementById('patient-search').value.trim().toLowerCase();
+        const pendingDoctorId = document.getElementById('staff-doctor-filter').value;
+        const pendingCondition = document.getElementById('staff-condition-filter').value;
+
+        // In Progress - Assigned to You Filters
+        const inProgMyQuery = document.getElementById('staff-inprogress-my-search').value.trim().toLowerCase();
+        const inProgMyDoctorId = document.getElementById('staff-inprogress-my-doctor-filter').value;
+        const inProgMyCondition = document.getElementById('staff-inprogress-my-condition-filter').value;
+
+        // In Progress - Assigned to Other Staff Filters
+        const inProgOthersQuery = document.getElementById('staff-inprogress-others-search').value.trim().toLowerCase();
+        const inProgOthersDoctorId = document.getElementById('staff-inprogress-others-doctor-filter').value;
+        const inProgOthersCondition = document.getElementById('staff-inprogress-others-condition-filter').value;
+
+        // Completed Filters
+        const compQuery = document.getElementById('staff-completed-search').value.trim().toLowerCase();
+        const compDoctorId = document.getElementById('staff-completed-doctor-filter').value;
+        const compCondition = document.getElementById('staff-completed-condition-filter').value;
+        
+        // Dynamically Populate Shared Condition Dropdowns
+        const conditions = [...new Set(staffCurrentPatients.map(p => p.chronic_condition).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+        const condHTML = '<option value="all">All conditions</option>' + conditions.map(c => `<option value="${c}">${c}</option>`).join('');
+        
+        ['staff-condition-filter', 'staff-inprogress-my-condition-filter', 'staff-inprogress-others-condition-filter', 'staff-completed-condition-filter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const val = el.value;
+                el.innerHTML = condHTML;
+                el.value = conditions.includes(val) ? val : 'all';
+            }
+        });
+
+        // Dynamically Populate Doctor Dropdowns
+        const docOptions = '<option value="all">All doctors</option>' + staffAllDoctors.map(doc => `<option value="${doc.id}">${doc.full_name}</option>`).join('');
+        ['staff-doctor-filter', 'staff-inprogress-my-doctor-filter', 'staff-inprogress-others-doctor-filter', 'staff-completed-doctor-filter'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const val = el.value;
+                el.innerHTML = docOptions;
+                el.value = val || 'all';
+            }
+        });
+
+        const tbodyPending = document.getElementById('staff-patient-rows');
+        const tbodyInProgressMy = document.getElementById('staff-inprogress-my-rows');
+        const tbodyInProgressOthers = document.getElementById('staff-inprogress-others-rows');
+        const tbodyCompleted = document.getElementById('staff-completed-rows');
+        
+        const followUpByPatient = new Map(staffCurrentFollowUps.map(followUp => [followUp.patient_id, followUp]));
+        const doctorsById = new Map(staffAllDoctors.map(doc => [doc.id, doc]));
+        
+        let pendingHTML = '';
+        let inProgressMyHTML = '';
+        let inProgressOthersHTML = '';
+        let completedHTML = '';
+        let myCompletedCount = 0;
+        let myInProgressCount = 0;
+        
+        staffCurrentPatients.forEach(patient => {
+            const followUp = followUpByPatient.get(patient.id);
+            const status = followUp ? followUp.status : 'pending';
+            const assignedStaffId = followUp ? followUp.assigned_staff_id : null;
+            const docName = doctorsById.get(patient.doctor_id)?.full_name || '—';
+            
+            if (status === 'completed') {
+                if (assignedStaffId === currentUser.id) {
+                    myCompletedCount++;
+                    if (patient.patient_label.toLowerCase().includes(compQuery) &&
+                        (compDoctorId === 'all' || patient.doctor_id === compDoctorId) &&
+                        (compCondition === 'all' || patient.chronic_condition === compCondition)) {
+                        
+                        completedHTML += `
+                            <tr>
+                                <td>${patient.patient_label}</td>
+                                <td>${patient.chronic_condition}</td>
+                                <td>${docName}</td>
+                                <td><span class="status-pill completed">Completed</span></td>
+                                <td>
+                                    <button class="view-mode-btn uncomplete-btn" style="border:1px solid var(--line);" data-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">Back to in-progress</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }
+            } else if (status === 'in_progress') {
+                if (assignedStaffId === currentUser.id) {
+                    myInProgressCount++;
+                    if (patient.patient_label.toLowerCase().includes(inProgMyQuery) &&
+                        (inProgMyDoctorId === 'all' || patient.doctor_id === inProgMyDoctorId) &&
+                        (inProgMyCondition === 'all' || patient.chronic_condition === inProgMyCondition)) {
+                        
+                        inProgressMyHTML += `
+                            <tr>
+                                <td>${patient.patient_label}</td>
+                                <td>${patient.chronic_condition}</td>
+                                <td>${docName}</td>
+                                <td>
+                                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                        <select class="critical-select" style="max-width: 160px;" data-critical-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">
+                                            <option value="none" ${(followUp?.critical_condition || 'none') === 'none' ? 'selected' : ''}>No critical issue</option>
+                                            <option value="critical" ${followUp?.critical_condition === 'critical' ? 'selected' : ''}>Critical</option>
+                                        </select>
+                                        <label class="check-label">
+                                            <input class="mark-completed-check follow-up-check" type="checkbox" data-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">
+                                            <span>Mark Completed</span>
+                                        </label>
+                                        <button type="button" class="view-mode-btn back-to-pending-btn" style="border:1px solid var(--line);" data-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">Back to pending</button>
+                                        <input class="critical-note-input" style="flex: 1; min-width: 180px;" type="text" placeholder="Critical note" value="${followUp?.critical_note || ''}" data-note-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                } else if (assignedStaffId && assignedStaffId !== currentUser.id) {
+                    if (patient.patient_label.toLowerCase().includes(inProgOthersQuery) &&
+                        (inProgOthersDoctorId === 'all' || patient.doctor_id === inProgOthersDoctorId) &&
+                        (inProgOthersCondition === 'all' || patient.chronic_condition === inProgOthersCondition)) {
+                        
+                        inProgressOthersHTML += `
+                            <tr>
+                                <td>${patient.patient_label}</td>
+                                <td>${patient.chronic_condition}</td>
+                                <td>${docName}</td>
+                            </tr>
+                        `;
+                    }
+                }
+            } else { 
+                // pending
+                if ((!assignedStaffId || assignedStaffId === currentUser.id) &&
+                    patient.patient_label.toLowerCase().includes(pendingQuery) &&
+                    (pendingDoctorId === 'all' || patient.doctor_id === pendingDoctorId) &&
+                    (pendingCondition === 'all' || patient.chronic_condition === pendingCondition)) {
+                    
+                    pendingHTML += `
+                        <tr>
+                            <td>${patient.patient_label}</td>
+                            <td>${patient.chronic_condition}</td>
+                            <td>${docName}</td>
+                            <td>
+                                <label class="check-label">
+                                    <input class="mark-in-progress-check follow-up-check" type="checkbox" data-patient="${patient.id}" data-followup="${followUp ? followUp.id : ''}">
+                                    <span>Mark In Progress</span>
+                                </label>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+
+        // Update Staff Performance Analysis
+        const currentStaffRow = windowStaffAllStaff.find(s => s.id === currentUser.id);
+        const target = currentStaffRow?.target_followup || 0;
+        
+        document.getElementById('staff-stat-completed').textContent = myCompletedCount;
+        document.getElementById('staff-stat-in-progress').textContent = myInProgressCount;
+        document.getElementById('staff-stat-target').textContent = target;
+        
+        const percentage = target > 0 ? Math.round((myCompletedCount / target) * 100) : 0;
+        document.getElementById('staff-stat-percentage').textContent = `${percentage}%`;
+
+        tbodyPending.innerHTML = pendingHTML || '<tr><td colspan="4" class="empty-state">No pending patients found for these filters.</td></tr>';
+        tbodyInProgressMy.innerHTML = inProgressMyHTML || '<tr><td colspan="4" class="empty-state">No follow-ups currently in progress by you.</td></tr>';
+        tbodyInProgressOthers.innerHTML = inProgressOthersHTML || '<tr><td colspan="3" class="empty-state">No follow-ups currently in progress by other staff.</td></tr>';
+        tbodyCompleted.innerHTML = completedHTML || '<tr><td colspan="5" class="empty-state">You have not completed any follow-ups matching these filters.</td></tr>';
+
+        attachStaffEventListeners(tbodyPending, tbodyInProgressMy, tbodyCompleted);
+    }
+
+    function attachStaffEventListeners(tbodyPending, tbodyInProgressMy, tbodyCompleted) {
+        // Pending -> In Progress
+        tbodyPending.querySelectorAll('.mark-in-progress-check').forEach(check => {
             check.addEventListener('change', async () => {
                 const patientId = check.getAttribute('data-patient');
                 const followUpId = check.getAttribute('data-followup');
-                const next = check.checked ? 'completed' : 'pending';
                 check.disabled = true;
-                if (followUpId) {
-                    await sb.from('follow_ups').update({ status: next, updated_by: currentUser.id }).eq('id', followUpId);
+                
+                let existingFu = staffCurrentFollowUps.find(f => f.patient_id === patientId);
+                if (existingFu) {
+                    existingFu.status = 'in_progress';
+                    existingFu.assigned_staff_id = currentUser.id;
+                    existingFu.updated_by = currentUser.id;
                 } else {
-                    const { data: created, error } = await sb.from('follow_ups').insert({ patient_id: patientId, month: currentMonth(), status: next, updated_by: currentUser.id }).select('id').single();
-                    if (!error && created) check.setAttribute('data-followup', created.id);
+                    staffCurrentFollowUps.push({
+                        id: 'temp-' + Date.now(),
+                        patient_id: patientId,
+                        status: 'in_progress',
+                        assigned_staff_id: currentUser.id,
+                        updated_by: currentUser.id
+                    });
                 }
-                refreshStaffPatientTable();
+                
+                renderStaffPatientTable();
+                
+                if (followUpId) {
+                    await sb.from('follow_ups').update({ status: 'in_progress', assigned_staff_id: currentUser.id, updated_by: currentUser.id }).eq('id', followUpId);
+                } else {
+                    await sb.from('follow_ups').insert({ patient_id: patientId, month: currentMonth(), status: 'in_progress', assigned_staff_id: currentUser.id, updated_by: currentUser.id });
+                }
+            });
+        });
+
+        // In Progress -> Completed
+        tbodyInProgressMy.querySelectorAll('.mark-completed-check').forEach(check => {
+            check.addEventListener('change', async () => {
+                const patientId = check.getAttribute('data-patient');
+                const followUpId = check.getAttribute('data-followup');
+                check.disabled = true;
+                
+                const row = check.closest('tr');
+                const critCond = row.querySelector('.critical-select').value;
+                const critNote = row.querySelector('.critical-note-input').value.trim();
+
+                let existingFu = staffCurrentFollowUps.find(f => f.patient_id === patientId);
+                if (existingFu) {
+                    existingFu.status = 'completed';
+                    existingFu.critical_condition = critCond;
+                    existingFu.critical_note = critNote;
+                }
+                
+                renderStaffPatientTable();
+                
+                if (followUpId) {
+                    await sb.from('follow_ups').update({ status: 'completed', critical_condition: critCond, critical_note: critNote || null, updated_by: currentUser.id }).eq('id', followUpId);
+                }
+            });
+        });
+
+        // In Progress -> Pending and release the assignment
+        tbodyInProgressMy.querySelectorAll('.back-to-pending-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const patientId = btn.getAttribute('data-patient');
+                const followUpId = btn.getAttribute('data-followup');
+                btn.disabled = true;
+
+                const existingFu = staffCurrentFollowUps.find(f => f.patient_id === patientId);
+                if (existingFu) {
+                    existingFu.status = 'pending';
+                    existingFu.assigned_staff_id = null;
+                    existingFu.updated_by = currentUser.id;
+                }
+
+                renderStaffPatientTable();
+
+                if (followUpId) {
+                    await sb.from('follow_ups').update({ status: 'pending', assigned_staff_id: null, updated_by: currentUser.id }).eq('id', followUpId);
+                }
+            });
+        });
+        
+        // Instant Saving for Critical Select & Note Inputs (In Progress table)
+        tbodyInProgressMy.querySelectorAll('.critical-select, .critical-note-input').forEach(control => {
+            const handleSave = async () => {
+                const patientId = control.getAttribute('data-critical-patient') || control.getAttribute('data-note-patient');
+                const followUpId = control.getAttribute('data-followup');
+                const row = control.closest('tr');
+                const critCond = row.querySelector('.critical-select').value;
+                const critNote = row.querySelector('.critical-note-input').value.trim();
+                
+                let existingFu = staffCurrentFollowUps.find(f => f.patient_id === patientId);
+                if (existingFu) {
+                    existingFu.critical_condition = critCond;
+                    existingFu.critical_note = critNote;
+                }
+                
+                if (followUpId) {
+                    await sb.from('follow_ups').update({ critical_condition: critCond, critical_note: critNote || null, updated_by: currentUser.id }).eq('id', followUpId);
+                }
+            };
+            
+            control.addEventListener('change', handleSave);
+            if(control.classList.contains('critical-note-input')) {
+                control.addEventListener('blur', handleSave);
+            }
+        });
+
+        // Completed -> In Progress (Undo)
+        tbodyCompleted.querySelectorAll('.uncomplete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const patientId = btn.getAttribute('data-patient');
+                const followUpId = btn.getAttribute('data-followup');
+                btn.disabled = true;
+                
+                let existingFu = staffCurrentFollowUps.find(f => f.patient_id === patientId);
+                if (existingFu) {
+                    existingFu.status = 'in_progress'; // revert to in progress so the claiming user retains it
+                }
+                
+                renderStaffPatientTable();
+                
+                if (followUpId) {
+                    await sb.from('follow_ups').update({ status: 'in_progress' }).eq('id', followUpId);
+                }
             });
         });
     }
 
-    document.getElementById('patient-search').addEventListener('input', event => {
-        const query = event.target.value.trim().toLowerCase();
-        document.querySelectorAll('#staff-patient-rows tr[data-patient-name]').forEach(row => {
-            row.hidden = query !== '' && !row.dataset.patientName.includes(query);
-        });
-    });
-
-    // ---- On load, check if already logged in ----
-    (async () => {
-        const { data: { user } } = await sb.auth.getUser();
-        if (user) routeToCorrectView();
-    })();
+    routeToCorrectView();
 </script>
-
 </body>
 </html>
